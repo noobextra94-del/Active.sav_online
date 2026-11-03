@@ -49,3 +49,21 @@ def make_property_bytes(prop_type, name, val_data):
         return bytes.fromhex(f"{n_size} {n_hex} {p_size} {p_hex} 0C 00 00 00 00 00 00 00 {struct_type_hex} 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 {vector_hex}")
         
     return None
+
+def inject_to_file(filepath, new_bytes):
+    with open(filepath, "rb") as f:
+        content = f.read()
+    
+    eof_marker = b"\x05\x00\x00\x00None\x00\x00"
+    std_marker = b"\x05\x00\x00\x00None\x00"
+    
+    pos = content.rfind(eof_marker)
+    if pos != -1:
+        base = content[:pos]
+    else:
+        pos2 = content.rfind(std_marker)
+        base = content[:pos2] if pos2 != -1 else content
+
+    updated = base + new_bytes + eof_marker
+    with open(filepath, "wb") as f:
+        f.write(updated)
