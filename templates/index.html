@@ -105,6 +105,16 @@
             margin-bottom: 15px;
             font-weight: bold;
         }
+        .file-status {
+            background: rgba(56, 189, 248, 0.1);
+            border: 1px dashed #38bdf8;
+            padding: 8px;
+            margin-bottom: 15px;
+            text-align: center;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #38bdf8;
+        }
         .footer {
             text-align: center;
             margin-top: 20px;
@@ -122,9 +132,13 @@
             <div class="msg">{{ message }}</div>
         {% endif %}
         
+        {% if file_loaded %}
+            <div class="file-status">📂 Active File Locked: <b>{{ file_loaded }}</b></div>
+        {% endif %}
+        
         <form action="/" method="POST" enctype="multipart/form-data">
             <div class="form-group">
-                <label>📁 Upload / Load Active.sav:</label>
+                <label>📁 Select Active.sav (Optional agar pehle se loaded hai):</label>
                 <input type="file" name="file">
             </div>
             <div class="form-group">
