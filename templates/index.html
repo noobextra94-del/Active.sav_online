@@ -2,56 +2,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ZAFRAN - UE4 Active.sav Tool</title>
     <style>
-        body {
-            background-color: #0b0f0b;
-            color: #00ff66;
-            font-family: 'Courier New', Courier, monospace;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }
-        .container {
-            background: #121a12;
-            border: 2px solid #00ff66;
-            padding: 30px;
-            border-radius: 10px;
-            width: 100%;
-            max-width: 500px;
-            box-shadow: 0 0 20px rgba(0, 255, 102, 0.3);
-        }
-        h2 { text-align: center; color: #ffcc00; text-shadow: 0 0 10px rgba(255, 204, 0, 0.5); }
+        body { background: #0b0f0b; color: #00ff66; font-family: monospace; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .container { background: #121a12; border: 2px solid #00ff66; padding: 30px; border-radius: 10px; width: 100%; max-width: 500px; box-shadow: 0 0 20px rgba(0, 255, 102, 0.3); }
+        h2 { text-align: center; color: #ffcc00; }
         .form-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; color: #00ffff; font-weight: bold; }
-        input, select {
-            width: 100%;
-            padding: 10px;
-            background: #1a261a;
-            border: 1px solid #00ff66;
-            color: #ffffff;
-            border-radius: 5px;
-            box-sizing: border-box;
-        }
-        button {
-            width: 100%;
-            padding: 12px;
-            background: #00ff66;
-            color: #000000;
-            border: none;
-            font-weight: bold;
-            font-size: 16px;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-top: 10px;
-            transition: 0.3s;
-        }
-        button:hover { background: #00cc52; box-shadow: 0 0 10px #00ff66; }
-        .footer { text-align: center; margin-top: 15px; font-size: 12px; color: #888; }
+        input, select { width: 100%; padding: 10px; background: #1a261a; border: 1px solid #00ff66; color: #ffffff; border-radius: 5px; box-sizing: border-box; }
+        .vector-box { display: flex; gap: 5px; }
+        button { width: 100%; padding: 12px; background: #00ff66; color: #000000; border: none; font-weight: bold; font-size: 16px; border-radius: 5px; cursor: pointer; margin-top: 10px; }
+        button:hover { background: #00cc52; }
     </style>
 </head>
 <body>
@@ -64,23 +25,48 @@
             </div>
             <div class="form-group">
                 <label>⚙️ Property Type:</label>
-                <select name="prop_type">
+                <select name="prop_type" id="propType" onchange="toggleInputs()">
                     <option value="FloatProperty">FloatProperty</option>
                     <option value="IntProperty">IntProperty</option>
                     <option value="BoolProperty">BoolProperty</option>
+                    <option value="StringProperty">StringProperty</option>
+                    <option value="DoubleProperty">DoubleProperty</option>
+                    <option value="VectorProperty">VectorProperty (X, Y, Z)</option>
                 </select>
             </div>
             <div class="form-group">
                 <label>📝 Property Name:</label>
                 <input type="text" name="prop_name" placeholder="e.g. PlayerHealth" required>
             </div>
-            <div class="form-group">
+            <div class="form-group" id="normalValueDiv">
                 <label>🔢 Property Value:</label>
-                <input type="text" name="prop_val" placeholder="e.g. 100.5" required>
+                <input type="text" name="prop_val" placeholder="Enter value">
+            </div>
+            <div class="form-group" id="vectorValueDiv" style="display: none;">
+                <label>📐 Vector Coordinates (X, Y, Z):</label>
+                <div class="vector-box">
+                    <input type="number" step="any" name="vec_x" placeholder="X">
+                    <input type="number" step="any" name="vec_y" placeholder="Y">
+                    <input type="number" step="any" name="vec_z" placeholder="Z">
+                </div>
             </div>
             <button type="submit">Inject & Download Modified File</button>
         </form>
-        <div class="footer">Created by ZAFRAN | Online Edition</div>
     </div>
+
+    <script>
+        function toggleInputs() {
+            let pType = document.getElementById('propType').value;
+            let normalDiv = document.getElementById('normalValueDiv');
+            let vectorDiv = document.getElementById('vectorValueDiv');
+            if (pType === 'VectorProperty') {
+                normalDiv.style.display = 'none';
+                vectorDiv.style.display = 'block';
+            } else {
+                normalDiv.style.display = 'block';
+                vectorDiv.style.display = 'none';
+            }
+        }
+    </script>
 </body>
 </html>
