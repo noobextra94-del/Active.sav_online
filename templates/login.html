@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ZAFRAN - Login</title>
+    <style>
+        body { background: #0b0f0b; color: #00ff66; font-family: monospace; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .box { background: #121a12; border: 2px solid #00ff66; padding: 30px; border-radius: 10px; width: 350px; text-align: center; }
+        input { width: 100%; padding: 10px; margin: 15px 0; background: #1a261a; border: 1px solid #00ff66; color: #fff; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background: #00ff66; color: #000; border: none; font-weight: bold; border-radius: 5px; cursor: pointer; }
+        .error { color: #ff3333; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2>⚡ SYSTEM LOGIN ⚡</h2>
+        {% if error %}<p class="error">{{ error }}</p>{% endif %}
+        <form method="POST">
+            <input type="text" name="license_key" placeholder="Enter License Key" required>
+            <button type="submit">Verify & Enter</button>
+        </form>
+    </div>
+</body>
+</html>
