@@ -1,48 +1,59 @@
 import os
-from flask import Flask, render_template, request, send_file
+from flask import Flask, render_template, request, send_file, session, redirect, url_for
 from werkzeug.utils import secure_filename
-import active_tool  # Yeh aapke asli tool ko import karega!
+import active_tool
+import auth_guard
 
 app = Flask(__name__)
+app.secret_key = "zafran_secret_key_999"
 UPLOAD_FOLDER = 'uploads'
 OUTPUT_FOLDER = 'outputs'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    error = None
+    if request.method == 'POST':
+        key = request.form.get('license_key')
+        success, msg = auth_guard.verify_license_key(key, "WEB_USER_HWID")
+        if success:
+            session['authenticated'] = True
+            return redirect(url_for('index'))
+        else:
+            error = msg
+    return render_template('login.html', error=error)
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
+    if not session.get('authenticated'):
+        return redirect(url_for('login'))
+
     if request.method == 'POST':
         file = request.files.get('file')
         prop_type = request.form.get('prop_type')
         prop_name = request.form.get('prop_name')
-        prop_val = request.form.get('prop_val')
+        
+        # Values handling based on type
+        if prop_type == "VectorProperty":
+            x = request.form.get('vec_x', 0)
+            y = request.form.get('vec_y', 0)
+            z = request.form.get('vec_z', 0)
+            prop_val = f"{x},{y},{z}"
+        else:
+            prop_val = request.form.get('prop_val')
 
         if not file or file.filename == '':
             return "❌ No file uploaded!", 400
 
         filename = secure_filename(file.filename)
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        filepath = os.path.join(UPLOAD_FOLDER, filename)
         file.save(filepath)
 
-        # File read karein
         with open(filepath, "rb") as f:
             content = f.read()
 
-        # Aapke tool ke functions use karke binary bytes banayein
-        new_bytes = None
-        if prop_type == "FloatProperty":
-            n_size, n_hex = active_tool.name_block(prop_name)
-            p_size, p_hex = active_tool.name_block("FloatProperty")
-            val_hex = active_tool.hexify(active_tool.le_float(float(prop_val)))
-            new_bytes = bytes.fromhex(f"{n_size} {n_hex} {p_size} {p_hex} 04 00 00 00 00 00 00 00 00 {val_hex}")
-        elif prop_type == "IntProperty":
-            n_size, n_hex = active_tool.name_block(prop_name)
-            p_size, p_hex = active_tool.name_block("IntProperty")
-            val_hex = active_tool.hexify(active_tool.le_int(int(prop_val)))
-            new_bytes = bytes.fromhex(f"{n_size} {n_hex} {p_size} {p_hex} 04 00 00 00 00 00 00 00 00 {val_hex}")
-
+        new_bytes = active_tool.make_property_bytes(prop_type, prop_name, prop_val)
         if new_bytes:
             eof_marker = b"\x05\x00\x00\x00None\x00\x00"
             pos = content.rfind(eof_marker)
