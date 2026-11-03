@@ -1,4 +1,5 @@
 import os
+import uuid
 from flask import Flask, render_template, request, send_file, session, redirect, url_for
 from werkzeug.utils import secure_filename
 import active_tool
@@ -29,44 +30,47 @@ def index():
     if not session.get('authenticated'):
         return redirect(url_for('login'))
 
+    if 'file_path' not in session:
+        session['file_path'] = ""
+
+    msg = None
     if request.method == 'POST':
-        file = request.files.get('file')
-        prop_type = request.form.get('prop_type')
-        prop_name = request.form.get('prop_name')
+        action = request.form.get('action')
         
-        # Values handling based on type
-        if prop_type == "VectorProperty":
-            x = request.form.get('vec_x', 0)
-            y = request.form.get('vec_y', 0)
-            z = request.form.get('vec_z', 0)
-            prop_val = f"{x},{y},{z}"
-        else:
-            prop_val = request.form.get('prop_val')
+        # File upload handling
+        file = request.files.get('file')
+        if file and file.filename != '':
+            filename = str(uuid.uuid4()) + "_" + secure_filename(file.filename)
+            filepath = os.path.join(UPLOAD_FOLDER, filename)
+            file.save(filepath)
+            session['file_path'] = filepath
+            msg = "📁 File successfully uploaded & loaded!"
 
-        if not file or file.filename == '':
-            return "❌ No file uploaded!", 400
+        current_file = session.get('file_path')
+        if not current_file or not os.path.exists(current_file):
+            return render_template('index.html', error="❌ Pehle Active.sav file upload karein!")
 
-        filename = secure_filename(file.filename)
-        filepath = os.path.join(UPLOAD_FOLDER, filename)
-        file.save(filepath)
+        if action in ['save_more', 'download']:
+            prop_type = request.form.get('prop_type')
+            prop_name = request.form.get('prop_name')
+            
+            if prop_type == "VectorProperty":
+                x = request.form.get('vec_x', 0)
+                y = request.form.get('vec_y', 0)
+                z = request.form.get('vec_z', 0)
+                prop_val = f"{x},{y},{z}"
+            else:
+                prop_val = request.form.get('prop_val')
 
-        with open(filepath, "rb") as f:
-            content = f.read()
+            new_bytes = active_tool.make_property_bytes(prop_type, prop_name, prop_val)
+            if new_bytes:
+                active_tool.inject_to_file(current_file, new_bytes)
+                msg = f"✅ Property '{prop_name}' ({prop_type}) successfully saved!"
 
-        new_bytes = active_tool.make_property_bytes(prop_type, prop_name, prop_val)
-        if new_bytes:
-            eof_marker = b"\x05\x00\x00\x00None\x00\x00"
-            pos = content.rfind(eof_marker)
-            base = content[:pos] if pos != -1 else content
-            updated = base + new_bytes + eof_marker
+            if action == 'download':
+                return send_file(current_file, as_attachment=True, download_name="Active.sav")
 
-            output_path = os.path.join(OUTPUT_FOLDER, filename)
-            with open(output_path, "wb") as f:
-                f.write(updated)
-
-            return send_file(output_path, as_attachment=True)
-
-    return render_template('index.html')
+    return render_template('index.html', message=msg)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
