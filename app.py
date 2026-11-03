@@ -30,27 +30,33 @@ def index():
     if not session.get('authenticated'):
         return redirect(url_for('login'))
 
-    if 'file_path' not in session:
-        session['file_path'] = ""
-
     msg = None
+    file_uploaded_name = session.get('file_original_name', None)
+
     if request.method == 'POST':
         action = request.form.get('action')
         
-        # File upload handling
+        # 1. Agar user ne nayi file di hai toh save karein
         file = request.files.get('file')
         if file and file.filename != '':
-            filename = str(uuid.uuid4()) + "_" + secure_filename(file.filename)
-            filepath = os.path.join(UPLOAD_FOLDER, filename)
+            original_name = secure_filename(file.filename)
+            unique_filename = str(uuid.uuid4()) + "_" + original_name
+            filepath = os.path.join(UPLOAD_FOLDER, unique_filename)
             file.save(filepath)
+            
+            # Session mein save kar lo taake bar bar file na maange
             session['file_path'] = filepath
-            msg = "📁 File successfully uploaded & loaded!"
+            session['file_original_name'] = original_name
+            file_uploaded_name = original_name
+            msg = f"📁 '{original_name}' successfully loaded! Ab properties add karein."
 
         current_file = session.get('file_path')
-        if not current_file or not os.path.exists(current_file):
-            return render_template('index.html', error="❌ Pehle Active.sav file upload karein!")
 
+        # 2. Agar property save ya download karni hai
         if action in ['save_more', 'download']:
+            if not current_file or not os.path.exists(current_file):
+                return render_template('index.html', error="❌ Pehle upar se Active.sav file select kar ke upload karein!")
+
             prop_type = request.form.get('prop_type')
             prop_name = request.form.get('prop_name')
             
@@ -62,15 +68,16 @@ def index():
             else:
                 prop_val = request.form.get('prop_val')
 
+            # Binary bytes generate karke inject karo
             new_bytes = active_tool.make_property_bytes(prop_type, prop_name, prop_val)
             if new_bytes:
                 active_tool.inject_to_file(current_file, new_bytes)
-                msg = f"✅ Property '{prop_name}' ({prop_type}) successfully saved!"
+                msg = f"✅ Property '{prop_name}' ({prop_type}) add ho gayi! File memory mein save hai, mazeed properties daal sakte hain."
 
             if action == 'download':
                 return send_file(current_file, as_attachment=True, download_name="Active.sav")
 
-    return render_template('index.html', message=msg)
+    return render_template('index.html', message=msg, file_loaded=file_uploaded_name)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
